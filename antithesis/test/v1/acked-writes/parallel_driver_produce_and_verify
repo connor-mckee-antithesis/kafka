@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Produce an acked batch, then verify every acked record in the ledger
+# (acked-writes-never-lost, acked-write-verified-across-leader-change).
+exec java -ea -Xmx256m -cp "$WORKLOAD_CP" org.apache.kafka.antithesis.AckedWritesDriver

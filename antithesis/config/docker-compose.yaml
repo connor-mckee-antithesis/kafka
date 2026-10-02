@@ -1,0 +1,82 @@
+# Antithesis harness for Apache Kafka: 3 KRaft combined broker+controller nodes
+# plus one workload client. See antithesis/scratchbook/deployment-topology.md.
+#
+# Build: docker compose -f antithesis/config/docker-compose.yaml build
+
+name: kafka
+
+x-broker: &broker
+  platform: linux/amd64
+  init: true
+  image: kafka-broker:latest
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9092' && bash -c '</dev/tcp/localhost/9093'"]
+    interval: 2s
+    timeout: 2s
+    retries: 90
+    start_period: 10s
+
+x-broker-env: &broker-env
+  NO_COLOR: "1"
+  KAFKA_CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+  KAFKA_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+
+services:
+  # Only kafka-1 builds the broker image; kafka-2/3 reuse the same tag. Giving all
+  # three a build section makes parallel (Bake) builds race to export the same
+  # tag and fail with "image ... already exists".
+  kafka-1:
+    <<: *broker
+    build:
+      context: ../..
+      dockerfile: antithesis/Dockerfile
+      target: broker
+    container_name: kafka-1
+    hostname: kafka-1
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "1"
+
+  kafka-2:
+    <<: *broker
+    pull_policy: never
+    container_name: kafka-2
+    hostname: kafka-2
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "2"
+
+  kafka-3:
+    <<: *broker
+    pull_policy: never
+    container_name: kafka-3
+    hostname: kafka-3
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "3"
+
+  client:
+    container_name: kafka-client
+    hostname: kafka-client
+    platform: linux/amd64
+    init: true
+    build:
+      context: ../..
+      dockerfile: antithesis/Dockerfile
+      target: client
+    image: kafka-client:latest
+    environment:
+      NO_COLOR: "1"
+      BOOTSTRAP_SERVERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/setup-done"]
+      interval: 2s
+      timeout: 2s
+      retries: 150
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
