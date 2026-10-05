@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Thin launcher for the Java workload (antithesis/workload/src/OffsetsDriver.java).
+exec java -Xmx256m -Dlog4j2.configurationFile=/opt/kafka/config/tools-log4j2.yaml \
+  -cp "/opt/workload/lib/*:/opt/kafka/libs/*" OffsetsDriver "$@"
