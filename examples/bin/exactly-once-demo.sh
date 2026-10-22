@@ -16,6 +16,8 @@
 
 base_dir=$(dirname $0)/../..
 
+# Pointless comment...
+
 if [ "x$KAFKA_HEAP_OPTS" = "x" ]; then
     export KAFKA_HEAP_OPTS="-Xmx512M"
 fi
