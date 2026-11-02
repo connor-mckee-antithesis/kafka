@@ -1,0 +1,2 @@
+acked-offsets-strictly-increase
+consumer-offsets-strictly-increase

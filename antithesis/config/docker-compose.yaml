@@ -1,0 +1,68 @@
+name: kafka
+
+x-kafka-node: &kafka-node
+  platform: linux/amd64
+  init: true
+  image: kafka-antithesis-node:latest
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9092' && bash -c '</dev/tcp/localhost/9093'"]
+    interval: 2s
+    timeout: 2s
+    retries: 60
+    start_period: 10s
+
+x-kafka-env: &kafka-env
+  NO_COLOR: "1"
+  CLUSTER_ID: "q1Sh-9_ISia_zwGINzRvyQ"
+  CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
+
+services:
+  kafka-1:
+    <<: *kafka-node
+    container_name: kafka-1
+    hostname: kafka-1
+    build:
+      context: ../..
+      dockerfile: antithesis/Dockerfile
+      target: kafka
+    environment:
+      <<: *kafka-env
+      NODE_ID: "1"
+
+  kafka-2:
+    <<: *kafka-node
+    container_name: kafka-2
+    hostname: kafka-2
+    environment:
+      <<: *kafka-env
+      NODE_ID: "2"
+
+  kafka-3:
+    <<: *kafka-node
+    container_name: kafka-3
+    hostname: kafka-3
+    environment:
+      <<: *kafka-env
+      NODE_ID: "3"
+
+  client:
+    container_name: kafka-client
+    hostname: kafka-client
+    platform: linux/amd64
+    init: true
+    build:
+      context: ../..
+      dockerfile: antithesis/Dockerfile
+      target: client
+    image: kafka-antithesis-client:latest
+    environment:
+      NO_COLOR: "1"
+      BOOTSTRAP_SERVERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
+      TOPIC: "offsets-test"
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
