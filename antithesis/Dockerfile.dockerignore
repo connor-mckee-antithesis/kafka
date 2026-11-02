@@ -1,0 +1,11 @@
+.git
+.gradle
+**/.gradle
+**/build
+**/out
+.idea
+.claude
+.antithesis-pipeline
+antithesis/scratchbook
+antithesis/config
+tests/results
